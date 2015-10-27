@@ -1,0 +1,65 @@
+#+title: scsh - scala for shell scripts
+
+Scala can be used for scripting and scsh wants to make this more
+convenient: allowing to share code between scripts and make third
+party libraries available.
+
+It produces a jar file that can be used to run scala scripts. You can
+add libraries to this jar and custom utilities that are then available
+in your scala scripts. There is a simple shell script provided
+intended to be used in the shebang of your scala scripts:
+
+#+begin_src shell
+#!/usr/bin/env scsh
+println("Hello world!")
+#+end_src
+
+It borrows ideas from [[http://www.crosson.org/2012/01/simplifying-scala-scripts-adding.html][here]] and [[https://github.com/stanislas/crsh-template][here]]. Currently this targets linux like
+systems only.
+
+* Usage
+
+Since everybody probably has its own utilities to add, clone this repo
+and build everything (using [[http://scala-sbt.org][sbt]]) with
+
+#+begin_src shell
+sbt gen-scsh
+#+end_src
+
+Then symlink the resulting shell script in =target/bin/scsh= to a
+location that is in your =PATH= (or add this directory to =PATH=).
+
+Now you can start scala scripting using the =/usr/bin/env scsh=
+shebang.
+
+When you have another utility or need more dependencies from your
+scripts, simply add it to the project and run =sbt scsh= again. This
+updates the script and jar file.
+
+The =build.sbt= file contains few keys that control the shell script
+generation:
+
+- shebang in scsh := "/bin/sh" :: The full path to a system shell.
+- javaBin in scsh := "java" :: The full path to the java
+     executable. The default is =java=. You can also try [[https://github.com/ninjudd/drip][drip]] that
+     optimizes startup time.
+- javaOptions in scsh := Seq() :: Additional java options or system
+     properties that are passed to the jvm running the scripts. The
+     environment variable =SCSH_OPTS= can be used to specify options
+     to a specific run. It overrides those from this key.
+
+If you call =scsh= without a script, the scala repl is started.
+
+
+* What it contains
+
+These are the libraries and utility code packaged up in the jar that
+runs the scripts. If you find something useful is missing, please open
+a pull request or an issue.
+
+** Libraries
+
+- [[https://github.com/pathikrit/better-files][better-files]] makes working with files in java and scala much nicer
+- [[https://github.com/scala/scala-swing][scala-swing]] scala wrapper for swing
+- [[https://github.com/typesafehub/scala-logging][scala-logging]] and [[http://logback.qos.ch][logback]] for logging
+- [[https://github.com/scopt/scopt][scopt]] a command line parser
