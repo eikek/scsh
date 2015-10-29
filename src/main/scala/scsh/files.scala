@@ -18,10 +18,23 @@ object files {
   }
 
   /**
+    * Split the name of the file in basename and extension.
+    */
+  def splitName(f: File): (String, String) =  f.name.lastIndexOf('.') match {
+    case i if i > 0 => (f.name.substring(0, i), f.name.substring(i + 1))
+    case _ => (f.name, "")
+  }
+
+  /**
     * Return the extension of the given file (without the dot).
     */
   def getExtension(p: File): Option[String] =
-    p.extension.map(_.substring(1))
+    Some(splitName(p)._2).filter(_.nonEmpty)
+
+  /**
+    * Return the name without extension.
+    */
+  def baseName(f: File): String = splitName(f)._1
 
   /**
     * Check whether the given path has an extension from the given
@@ -33,10 +46,12 @@ object files {
       case _ => exts.isEmpty
     }
 
-
   /**
-    * Change extension of `p` to `ext` (given without dot!)
+    * Change extension of `p` to `ext` (given without dot!). If
+    * `ext` is empty, the extension of `p` is removed.
     */
   def changeExtension(ext: String)(p: File): File =
-    p.changeExtensionTo(s".$ext")
+    if (ext.isEmpty) p.path.resolveSibling(baseName(p))
+    else p.path.resolveSibling(s"${baseName(p)}.$ext")
+
 }
