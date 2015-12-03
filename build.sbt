@@ -1,6 +1,6 @@
 name := "scsh"
 
-version := "0.1.0"
+version := "0.1.1"
 
 scalaVersion := "2.11.7"
 
@@ -25,3 +25,7 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
 
 libraryDependencies += "com.github.scopt" %% "scopt" % "3.3.0"
+
+libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
+
+libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.2.2"
