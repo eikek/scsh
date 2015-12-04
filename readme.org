@@ -65,3 +65,4 @@ a pull request or an issue.
 - [[https://github.com/scopt/scopt][scopt]] a command line parser
 - [[https://github.com/xerial/sqlite-jdbc][sqlite-jdbc]] jdbc driver for [[http://www.sqlite.org][sqlite]] databases
 - [[https://github.com/tototoshi/scala-csv][scala-csv]] a library for working with csv files
+- [[https://github.com/typesafehub/config][typesafe's config]] a configuration library

@@ -8,7 +8,8 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 shebang in scsh := "/bin/sh"
 
-javaBin in scsh := "java"
+// use "java" for standard java command
+javaBin in scsh := "drip"
 
 javaOptions in scsh := Seq()
 
@@ -29,3 +30,5 @@ libraryDependencies += "com.github.scopt" %% "scopt" % "3.3.0"
 libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
 
 libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.2.2"
+
+libraryDependencies += "com.typesafe" % "config" % "1.3.0"
