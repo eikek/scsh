@@ -1,0 +1,40 @@
+#!/usr/bin/env scsh
+
+import java.time._
+import java.time.format._
+import better.files._
+import scsh.files._
+import scsh.bulkfile._
+
+case class Config(
+  params: Params = Params(),
+  pattern: String = "yyyy-MM-dd"
+) extends BulkFileConfig {
+
+  lazy val formatter = DateTimeFormatter.ofPattern(pattern)
+}
+
+object rename extends FileTransform[Config] {
+  val parser = new BulkFileParser[Config]("rename") {
+    head("rename", "1.0")
+    opt[String]("pattern") optional() action {
+      (x, c) => c.copy(pattern = x)
+    } text ("The date time pattern to use.")
+
+    addBaseOptions()
+
+    def update(cfg: Config, p: Params) =
+      cfg.copy(params = p)
+  }
+
+  def transform(cfg: Config)(in: File): File = {
+    val lastmod = in.lastModifiedTime.atZone(ZoneId.systemDefault)
+    val out = in.mapBaseName(n => s"${n}_${cfg.formatter.format(lastmod)}")
+    logLine(s"Move ${in.path} -> ${out.path}")
+    if (!cfg.params.dry)
+      in.moveTo(out)
+    out
+  }
+}
+
+rename.main(args, Config())

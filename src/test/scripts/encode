@@ -1,0 +1,29 @@
+#!/usr/bin/env scsh
+
+import better.files._
+import scsh.files._
+import scsh.bulkfile._
+
+case class Config(
+  params: Params = Params(),
+  quality: Int = 5) extends BulkFileConfig
+
+object encode extends FileTransformProcess[Config] {
+  val parser = new BulkFileParser[Config]("encode") {
+    head("encode", "1.0")
+    opt[Int]('q', "quality") optional() action { (x, c) =>
+      c.copy(quality = x)
+    } text ("The quality, something between -1 (low) and 10 (high)")
+
+    addBaseOptions()
+
+    def update(cfg: Config, p: Params) = cfg.copy(params = p)
+  }
+
+  def makeOutFile(in: File, cfg: Config): File =
+    in.mapExtension(_ => "ogg")
+
+  def makeCommand(in: File, out: File, cfg: Config): Cmd =
+    Cmd("oggenc") ~ in ~ "-q" ~ cfg.quality ~ "-o" ~ out
+}
+encode.main(args, Config())

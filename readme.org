@@ -139,3 +139,196 @@ method takes such a check and throws an exception, if the file doesn't
 pass. This is handy to quickly verify an input or output file. The
 ~FileCheck~ trait additionally has an error message which is returned
 with the exception.
+
+*** bulk file operations
+
+I often do certain operations on one or more files. The
+~scsh.bulkfile~ package provides some templates to ease writing
+scripts that transform files.
+
+For example, the next script renames files such that their base
+name ends with the timestamp of its last modification time.
+
+#+begin_src scala
+#!/usr/bin/env scsh
+
+import java.time._
+import java.time.format._
+import better.files._
+import scsh.files._
+import scsh.bulkfile._
+
+case class Config(
+  params: Params = Params(),
+  pattern: String = "yyyy-MM-dd"
+) extends BulkFileConfig {
+  lazy val formatter = DateTimeFormatter.ofPattern(pattern)
+}
+
+object rename extends FileTransform[Config] {
+  val parser = new BulkFileParser[Config]("rename") {
+    head("rename", "1.0")
+    opt[String]("pattern") optional() action {
+      (x, c) => c.copy(pattern = x)
+    } text ("The date time pattern to use.")
+
+    addBaseOptions()
+
+    def update(cfg: Config, p: Params) =
+      cfg.copy(params = p)
+  }
+
+  def transform(cfg: Config)(in: File): File = {
+    val lastmod = in.lastModifiedTime.atZone(ZoneId.systemDefault)
+    val out = in.mapBaseName(n => s"${n}_${cfg.formatter.format(lastmod)}")
+    logLine(s"Move ${in.path} -> ${out.path}")
+    if (!cfg.params.dry)
+      in.moveTo(out)
+    out
+  }
+}
+rename.main(args, Config())
+#+end_src
+
+At first the ~Config~ case class contains the user input. It must
+extend ~BulkFileConfig~ which declares a ~params~ field. Then the main
+object extends ~FileTransform~ and defines the ~scopt.OptionParser~
+and the transformation method. The parser should extend
+~BulkFileParser~ so the ~addBaseOptions~ method is provided that adds
+all standard options and arguments. We only additionally need an
+option for the date/time pattern. See [[https://github.com/scopt/scopt][scopt]] project for more
+information. The ~update~ method is necessary to let the base options
+update the config.
+
+Save this in a file =rename= and execute it:
+
+#+begin_src
+$ ./rename --help
+rename 1.0
+Usage: rename [options] input
+
+  --pattern <value>
+        The date time pattern to use.
+  --regex <value>
+        Use a regex to convert all matched files. The <input> argument must
+        then be a directory and all files are scanned recursively. `regex' is
+        matched against the complete path name of each file.
+  --glob <value>
+        Use a glob to convert all matched files. The <input> argument must
+        then be a directory and all files are scanned recursively. `glob' is
+        matched against the complete path name of each file.
+  -p | --parallel
+        Execute the transformation on all files in parallel
+  --dry
+        Do not execute the transformation, but show what would happen.
+  --help
+        prints this usage text
+  --version
+        prints version information and exits
+  input
+        The input file to convert. It must be a directory if `--regex'
+        is specified.
+#+end_src
+
+The ~BulkFileParser~ defines some options, including =help= and
+=version=. As you can see from the help text, the script can rename a
+single file or a tree. If the script is applied to a tree, a regex or
+glob must be given to select files from it.
+
+Here is an example (dry) run:
+
+#+begin_example
+$ rename --dry --regex '(?i).*.flac' /tmp/testdir
+Transform files in /tmp/testdir matching `(?i).*.flac':
+/tmp/testdir/07-Just Before-Chad Lawson.flac
+/tmp/testdir/09-Ave Maria-Chad Lawson.flac
+/tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.flac
+/tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.flac
+/tmp/testdir/06-I Wish I Knew-Chad Lawson.flac
+...
+Continue (y/n)? y
+Move /tmp/testdir/07-Just Before-Chad Lawson.flac -> /tmp/testdir/07-Just Before-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/09-Ave Maria-Chad Lawson.flac -> /tmp/testdir/09-Ave Maria-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.flac -> /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.flac -> /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/06-I Wish I Knew-Chad Lawson.flac -> /tmp/testdir/06-I Wish I Knew-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/03-Falling Together-Chad Lawson.flac -> /tmp/testdir/03-Falling Together-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/02-Heart in Hand-Chad Lawson.flac -> /tmp/testdir/02-Heart in Hand-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/04-A Love Is Born-Chad Lawson.flac -> /tmp/testdir/04-A Love Is Born-Chad Lawson_2015-12-07.flac
+Move /tmp/testdir/08-Father Abraham-Chad Lawson.flac -> /tmp/testdir/08-Father Abraham-Chad Lawson_2015-12-07.flac
+#+end_example
+
+There is another template trait, ~FileTransformProcess~ that helps
+using external commands on files. Again, a parser must be specified
+for additional options/arguments. Then specify a method to create the
+output filename and the external command to execute. For example,
+encoding audio files using =oggenc=:
+
+#+begin_src scala
+#!/usr/bin/env scsh
+
+import better.files._
+import scsh.files._
+import scsh.bulkfile._
+
+case class Config(
+  params: Params = Params(),
+  quality: Int = 5) extends BulkFileConfig
+
+object encode extends FileTransformProcess[Config] {
+  val parser = new BulkFileParser[Config]("encode") {
+    head("encode", "1.0")
+    opt[Int]('q', "quality") optional() action { (x, c) =>
+      c.copy(quality = x)
+    } text ("The quality, something between -1 (low) and 10 (high)")
+
+    addBaseOptions()
+
+    def update(cfg: Config, p: Params) = cfg.copy(params = p)
+  }
+
+  def makeOutFile(in: File, cfg: Config): File =
+    in.mapExtension(_ => "ogg")
+
+  def makeCommand(in: File, out: File, cfg: Config): Cmd =
+    Cmd("oggenc") ~ in ~ "-q" ~ cfg.quality ~ "-o" ~ out
+}
+encode.main(args, Config())
+#+end_src
+
+The ~Cmd~ class provides some type safety when specifying the external
+command and its arguments. For each argument type there must be a
+corresponding ~A ⇒ Option[String]~ converter in scope. Arguments are
+concatenated using =~=. Executing this script looks like this:
+
+#+begin_example
+▶ ./src/test/scripts/encode --dry --glob '**.flac' /tmp/testdir
+Transform files in /tmp/testdir matching `**.flac':
+/tmp/testdir/07-Just Before-Chad Lawson.flac
+/tmp/testdir/09-Ave Maria-Chad Lawson.flac
+/tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.flac
+/tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.flac
+/tmp/testdir/06-I Wish I Knew-Chad Lawson.flac
+...
+Continue (y/n)? y
+Transform (dry) /tmp/testdir/07-Just Before-Chad Lawson.flac => /tmp/testdir/07-Just Before-Chad Lawson.ogg
+oggenc /tmp/testdir/07-Just Before-Chad Lawson.flac -q 5 -o /tmp/testdir/07-Just Before-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/09-Ave Maria-Chad Lawson.flac => /tmp/testdir/09-Ave Maria-Chad Lawson.ogg
+oggenc /tmp/testdir/09-Ave Maria-Chad Lawson.flac -q 5 -o /tmp/testdir/09-Ave Maria-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.flac => /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.ogg
+oggenc /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.flac -q 5 -o /tmp/testdir/05-Loves me Loves me not Loves me-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.flac => /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.ogg
+oggenc /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.flac -q 5 -o /tmp/testdir/01-I Know a Love So True and Fair-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/06-I Wish I Knew-Chad Lawson.flac => /tmp/testdir/06-I Wish I Knew-Chad Lawson.ogg
+oggenc /tmp/testdir/06-I Wish I Knew-Chad Lawson.flac -q 5 -o /tmp/testdir/06-I Wish I Knew-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/03-Falling Together-Chad Lawson.flac => /tmp/testdir/03-Falling Together-Chad Lawson.ogg
+oggenc /tmp/testdir/03-Falling Together-Chad Lawson.flac -q 5 -o /tmp/testdir/03-Falling Together-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/02-Heart in Hand-Chad Lawson.flac => /tmp/testdir/02-Heart in Hand-Chad Lawson.ogg
+oggenc /tmp/testdir/02-Heart in Hand-Chad Lawson.flac -q 5 -o /tmp/testdir/02-Heart in Hand-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/04-A Love Is Born-Chad Lawson.flac => /tmp/testdir/04-A Love Is Born-Chad Lawson.ogg
+oggenc /tmp/testdir/04-A Love Is Born-Chad Lawson.flac -q 5 -o /tmp/testdir/04-A Love Is Born-Chad Lawson.ogg
+Transform (dry) /tmp/testdir/08-Father Abraham-Chad Lawson.flac => /tmp/testdir/08-Father Abraham-Chad Lawson.ogg
+oggenc /tmp/testdir/08-Father Abraham-Chad Lawson.flac -q 5 -o /tmp/testdir/08-Father Abraham-Chad Lawson.ogg
+#+end_example
+
+With =--dry= the command is printed to stdout, otherwise it is executed.
