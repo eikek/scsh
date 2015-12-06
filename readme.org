@@ -92,3 +92,50 @@ a pull request or an issue.
 - [[https://github.com/xerial/sqlite-jdbc][sqlite-jdbc]] jdbc driver for [[http://www.sqlite.org][sqlite]] databases
 - [[https://github.com/tototoshi/scala-csv][scala-csv]] a library for working with csv files
 - [[https://github.com/typesafehub/config][typesafe's config]] a configuration library
+
+** code
+
+*** more file utils
+
+The =better-files= library provides a great api for working with
+files. These utilities add more helpers to the ~File~ type that are
+convenient in scripts. Declare the following imports:
+
+#+begin_src scala
+import better.files._
+import scsh.files._
+#+end_src
+
+Some examples follow:
+
+#+begin_src scala
+File("a.Txt").hasExtensions(Set("txt", "md")) == true
+#+end_src
+
+~hasExtensions~ checks whether the file's extension is a member of the
+given set. The comparison is case-insensitive.
+
+#+begin_src scala
+File("a/b/c.txt").mapFileName("ab" + _) // -> "a/b/abc.txt"
+File("a/b/c.txt").mapBaseName(_ + "de") // -> "a/b/cde.txt"
+File("a/b/c.txt").mapExtension(_ => "md") // -> "a/b/c.md"
+#+end_src
+
+The ~mapXyz~ methods resolve siblings of the file based on the name or
+a part thereof. The source file is not checked for existance or which
+type it is and it is not changed, either (i.e. it is not renamed).
+
+#+begin_src scala
+import scsh.files.FileCheck._
+
+File("a/b.txt").assert(missing)
+File("/etc").assert(directory)
+File("/etc/passwd").assert(writeable & readable)
+#+end_src
+
+The ~FileCheck~ trait is for checking certain properties of a
+file. There are some defined in its companion. The ~File#assert~
+method takes such a check and throws an exception, if the file doesn't
+pass. This is handy to quickly verify an input or output file. The
+~FileCheck~ trait additionally has an error message which is returned
+with the exception.
