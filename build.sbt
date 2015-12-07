@@ -8,8 +8,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 shebang in scsh := "/bin/sh"
 
-// use "java" for standard java command
-javaBin in scsh := "drip"
+javaBin in scsh := "java"
 
 javaOptions in scsh := Seq()
 
