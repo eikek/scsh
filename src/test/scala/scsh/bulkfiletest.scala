@@ -49,6 +49,9 @@ class bulkfiletest extends FlatSpec with Matchers {
   }
 
   "Cmd" should "have implicits in scope" in {
+    val t1: Option[Int] = None
+    val t2: Option[String] = None
+    val t3: Option[Long] = Some(123L)
     val tr = new FileTransformProcess[Config] {
       val parser = new BulkFileParser[Config]("test") {
         addBaseOptions()
@@ -56,11 +59,11 @@ class bulkfiletest extends FlatSpec with Matchers {
       }
       def makeOutFile(in: File, cfg: Config) = in.mapExtension(_ => "txt")
       def makeCommand(in: File, out: File, cfg: Config): Cmd =
-        Cmd("none") ~ "astring" ~ 31 ~ out
+        Cmd("none") ~ "astring" ~ t1 ~ 31 ~ t2 ~ t3 ~ out
     }
 
     val cmd = tr.makeCommand(File("in"), File("out"), Config())
-    cmd.args.reverse should be (List("astring", "31", File("out").path.toString))
-    cmd.value should be (Seq("none", "astring", "31", File("out").path.toString))
+    cmd.args.reverse should be (List("astring", "31", "123", File("out").path.toString))
+    cmd.value should be (Seq("none", "astring", "31", "123", File("out").path.toString))
   }
 }

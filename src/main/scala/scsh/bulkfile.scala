@@ -155,24 +155,23 @@ object bulkfile {
     def makeOutFile(in: File, cfg: C): File
 
     case class Cmd(name: String, args: List[String] = Nil) {
-      def ~[A](arg: A)(implicit f: A => Option[String]): Cmd = f(arg) match {
-        case None => this
-        case Some(x) => copy(args = x :: args)
+      def ~[A](arg: A)(implicit f: A => String): Cmd =
+        copy(args = f(arg) :: args)
+
+      def ~[A](oarg: Option[A])(implicit f: A => String): Cmd = oarg match {
+        case Some(x) => this.~(x)
+        case _ => this
       }
+
       lazy val value: Seq[String] = name :: args.reverse
       lazy val asString: String = value.mkString(" ")
     }
 
-    private def liftF[A, B](f: A => B): A => Option[B] = a => Some(f(a))
-    implicit val forString: String => Option[String] = liftF(identity[String])
-    implicit val forInt: Int => Option[String] = liftF(_.toString)
-    implicit val forLong: Long => Option[String] = liftF(_.toString)
-    implicit val forFile: File => Option[String] = liftF(_.path.toString)
-    implicit val forJavaFile: JFile => Option[String] = f => forFile(f.toScala)
-    implicit val forJavaPath: JPath => Option[String] = f => forFile(f)
-
-    implicit def forOpional[A](implicit f: A => Option[String]): Option[A] => Option[String] =
-      _.flatMap(f)
+    implicit val forInt: Int => String = _.toString
+    implicit val forLong: Long => String = _.toString
+    implicit val forFile: File => String = _.path.toString
+    implicit val forJavaFile: JFile => String = f => forFile(f.toScala)
+    implicit val forJavaPath: JPath => String = f => forFile(f)
 
   }
 }
