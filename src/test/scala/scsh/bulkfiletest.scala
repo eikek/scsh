@@ -66,4 +66,18 @@ class bulkfiletest extends FlatSpec with Matchers {
     cmd.args.reverse should be (List("astring", "31", "123", File("out").path.toString))
     cmd.value should be (Seq("none", "astring", "31", "123", File("out").path.toString))
   }
+
+  "Cmd" should "accept seq args" in {
+    val tr = new FileTransformProcess[Config] {
+      val parser = new BulkFileParser[Config]("test") {
+        addBaseOptions()
+        def update(c: Config, p: Params) = c.copy(params = p)
+      }
+      def makeOutFile(in: File, cfg: Config) = in.mapExtension(_ => "txt")
+      def makeCommand(in: File, out: File, cfg: Config): Cmd =
+        Cmd("none") ~ Seq("-vf", "abc1") ~ out ~ Seq.empty[Int]
+    }
+    val cmd = tr.makeCommand(File("in"), File("out"), Config())
+    cmd.args.reverse should be (List("-vf", "abc1", File("out").path.toString))
+  }
 }

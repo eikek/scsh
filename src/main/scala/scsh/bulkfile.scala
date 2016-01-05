@@ -163,6 +163,9 @@ object bulkfile {
         case _ => this
       }
 
+      def ~[A](seq: Iterable[A])(implicit f: A => String): Cmd =
+        seq.foldLeft(this){ (c, e) => c ~ e }
+
       lazy val value: Seq[String] = name :: args.reverse
       lazy val asString: String = value.mkString(" ")
     }
