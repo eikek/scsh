@@ -141,13 +141,16 @@ object bulkfile {
 
     def transform(cfg: C)(in: File): File = {
       val out = makeOutFile(in, cfg)
-      logLine(s"""Transform ${if (cfg.params.dry) "(dry) " else ""}${in.path} => ${out.path}""")
-      val cmd = makeCommand(
-        in.assert(readableFile),
-        out.assert(writeableFile),
-        cfg)
-      if (cfg.params.dry) logLine(cmd.asString)
-      else sys.process.Process(cmd.value).!<
+      if (out.exists) logLine(s"Skip, because output file ${out.path} already exists.")
+      else {
+        logLine(s"""Transform ${if (cfg.params.dry) "(dry) " else ""}${in.path} => ${out.path}""")
+        val cmd = makeCommand(
+          in.assert(readableFile),
+          out.assert(writeableFile),
+          cfg)
+        if (cfg.params.dry) logLine(cmd.asString)
+        else sys.process.Process(cmd.value).!<
+      }
       out
     }
 
