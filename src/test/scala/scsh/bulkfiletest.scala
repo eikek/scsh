@@ -26,7 +26,7 @@ class bulkfiletest extends FlatSpec with Matchers {
     parser.parse(List("--count", "12", "target/test"), Config()) match {
       case Some(cfg) =>
         cfg.count should be (12)
-        cfg.params.in should be (testFile)
+        cfg.params.ins should be (Seq(testFile))
       case _ =>
         sys.error("failed")
     }
@@ -44,8 +44,12 @@ class bulkfiletest extends FlatSpec with Matchers {
     parser.parse(List("--regex", "", "target"), Config()) should be (None)
     parser.parse(List("target"), Config()) should be (None)
 
-    val Some(cfg) = parser.parse(List("--regex", ".*.avi$", "target"), Config())
-    cfg should be (Config(Params(file"target", Some(".*.avi$")), 0))
+    val Some(cfg1) = parser.parse(List("--regex", ".*.avi$", "target"), Config())
+    cfg1 should be (Config(Params(Seq(file"target"), Some(".*.avi$")), 0))
+
+    val Some(cfg2) = parser.parse(List("--regex", ".*.avi$", "target", "project"), Config())
+    cfg2 should be (Config(Params(Seq(file"target", file"project"), Some(".*.avi$")), 0))
+
   }
 
   "Cmd" should "have implicits in scope" in {

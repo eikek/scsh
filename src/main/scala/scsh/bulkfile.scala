@@ -11,7 +11,7 @@ import FileCheck._
 object bulkfile {
 
   case class Params(
-    in: File = File("."),
+    ins: Seq[File] = Seq.empty,
     regex: Option[String] = None,
     glob: Option[String] = None,
     parallel: Boolean = false,
@@ -21,6 +21,9 @@ object bulkfile {
   trait BulkFileConfig {
     def params: Params
   }
+
+  def dirString(p: Params) =
+    p.ins.map(_.path.toString).mkString(", ")
 
   abstract class BulkFileParser[V <: BulkFileConfig](name: String)
       extends scopt.OptionParser[V](name) {
@@ -59,19 +62,19 @@ object bulkfile {
       help("help") text("prints this usage text")
       version("version") text("prints version information and exits")
 
-      arg[File]("input") required() valueName "<file or dir>" action { (x, c) =>
-        update(c, c.params.copy(in = x))
-      } text("""The input file to convert. It must be a directory if `--regex'
-        is specified.""")
+      arg[Seq[File]]("<input...>") minOccurs(1) unbounded() valueName("<files or dirs>") action { (x, c) =>
+        update(c, c.params.copy(ins = c.params.ins ++ x))
+      } text("""The input file(s) to convert. It must be a directories if `--regex'
+        or `--glob' is specified.""")
 
       checkConfig { cfg =>
         val p = cfg.params
         if (p.regex.isDefined && p.glob.isDefined)
           failure("Specify either a glob or a regex")
-        else if ((p.regex.isDefined || p.glob.isDefined) && !p.in.isDirectory)
-          failure(s"`${p.regex.orElse(p.glob).get}' given, so `${p.in.path}' must be a directory")
-        else if (p.regex.isEmpty && p.glob.isEmpty && !p.in.isRegularFile)
-          failure(s"${p.in.path} must be an existing file!")
+        else if ((p.regex.isDefined || p.glob.isDefined) && !p.ins.forall(_.isDirectory))
+          failure(s"""`${p.regex.orElse(p.glob).get}' given, so `${dirString(p)}' must all be a directories""")
+        else if (p.regex.isEmpty && p.glob.isEmpty && !p.ins.forall(_.isRegularFile))
+          failure(s"""${dirString(p)} must be existing files!""")
         else success
       }
     }
@@ -88,16 +91,18 @@ object bulkfile {
     def logLine(line: String): Unit =
       println(line)
 
-    def findFiles(p: Params): Iterator[File] = {
+    def findFiles(p: Params)(in: File): Iterator[File] = {
       val pattern = p.glob.orElse(p.regex).get
       val syntax = p.regex.map(_ => "regex").getOrElse("glob")
-      p.in.assert(directory).glob(pattern, syntax)
+      in.assert(directory).glob(pattern, syntax)
     }
 
     def transformAll(cfg: C): Unit = {
       val p = cfg.params
-      logLine(s"Transform files in ${p.in.path} matching `${p.regex.orElse(p.glob).get}':")
-      val preview = findFiles(p)
+      val files =  findFiles(p)_
+      def allFiles = p.ins.foldLeft(List[File]().iterator){ (iter, in) => iter ++ files(in) }
+      logLine(s"Transform files in ${dirString(p)} matching `${p.regex.orElse(p.glob).get}':")
+      val preview = allFiles
         .take(5)
         .map(_.path.toString)
       if (preview.isEmpty) {
@@ -106,9 +111,8 @@ object bulkfile {
         preview.foreach(logLine)
         logLine("...")
         if (confirm.continue()) {
-          val files = findFiles(p).toSeq
-          if (p.dry || !p.parallel) files foreach transform(cfg)
-          else files.par foreach transform(cfg)
+          if (p.dry || !p.parallel) allFiles foreach transform(cfg)
+          else allFiles.toSeq.par foreach transform(cfg)
         }
       }
     }
@@ -124,7 +128,7 @@ object bulkfile {
         case Some(cfg) =>
           try {
             val p = cfg.params
-            if (p.regex.orElse(p.glob).isEmpty) transform(cfg)(p.in)
+            if (p.regex.orElse(p.glob).isEmpty) p.ins.map(transform(cfg))
             else transformAll(cfg)
           }  catch {
             case e: Exception =>
