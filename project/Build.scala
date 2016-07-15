@@ -16,11 +16,15 @@ object Build extends sbt.Build {
     `gen-scsh` := genScshImpl.value
   )
 
+  lazy val scalaDeps: File => Boolean = f => (f.toString contains "scala-lang") && (f.getName contains "scala-")
+
   lazy val genScshImpl = Def.task {
     val template = sourceDirectory.value / "main" / "shell" / "scsh"
     val out = target.value / "bin" / "scsh"
+    val scalalib = Attributed.data((fullClasspath in Runtime).value).filter(scalaDeps).mkString(java.io.File.pathSeparator)
     val body = IO.read(template)
       .replace("$assembly-jar$", assembly.value.toString)
+      .replace("$scala-lib$", scalalib)
       .replace("$shebang$", (shebang in scsh).value)
       .replace("$java-bin$", (javaBin in scsh).value)
       .replace("$options$", (javaOptions in scsh).value.mkString(" "))
