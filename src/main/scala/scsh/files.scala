@@ -146,7 +146,7 @@ object files {
     /**
       * Same as `this / fn`.
       */
-    def mapPath(fn: File => File): File = f / fn
+    def mapPath(fn: File => File): File = fn(f)
 
     // better.files has this from 2.13+
     def sibling(name: String): File =

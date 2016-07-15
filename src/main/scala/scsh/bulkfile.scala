@@ -93,8 +93,8 @@ object bulkfile {
 
     def findFiles(p: Params)(in: File): Iterator[File] = {
       val pattern = p.glob.orElse(p.regex).get
-      val syntax = p.regex.map(_ => "regex").getOrElse("glob")
-      in.assert(directory).glob(pattern, syntax)
+      val syntax = p.regex.map(_ => File.PathMatcherSyntax.regex).getOrElse(File.PathMatcherSyntax.glob)
+      in.assert(directory).glob(pattern)(syntax)
     }
 
     def transformAll(cfg: C): Unit = {

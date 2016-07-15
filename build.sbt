@@ -1,8 +1,8 @@
 name := "scsh"
 
-version := "0.1.1"
+version := "0.2.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
@@ -12,22 +12,17 @@ javaBin in scsh := "java"
 
 javaOptions in scsh := Seq()
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-
-libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7" % "compile"
-
-libraryDependencies += "com.github.pathikrit" %% "better-files" % "2.13.0"
-
-libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "2.0.0-M2"
-
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
-
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
-
-libraryDependencies += "com.github.scopt" %% "scopt" % "3.3.0"
-
-libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
-
-libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.2.2"
-
-libraryDependencies += "com.typesafe" % "config" % "1.3.0"
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test",
+  "org.scala-lang" % "scala-compiler" % "2.11.8" % "compile",
+  "com.github.pathikrit" %% "better-files" % "2.16.0",
+  "org.scala-lang.modules" %% "scala-swing" % "2.0.0-M2",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+  "ch.qos.logback" % "logback-classic" % "1.1.7",
+  "com.github.scopt" %% "scopt" % "3.5.0",
+  "org.xerial" % "sqlite-jdbc" % "3.8.11.2",
+  "com.github.tototoshi" %% "scala-csv" % "1.3.3",
+  "com.typesafe" % "config" % "1.3.0",
+  "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.6",
+  "com.sksamuel.scrimage" %% "scrimage-io-extra" % "2.1.6"
+)
