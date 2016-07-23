@@ -7,18 +7,17 @@ object files {
   implicit val readBetterFile: scopt.Read[File] =
     scopt.Read.reads(File(_))
 
-  /**
-    * Create a stream of all files and directories below the given
+  /** Create a stream of all files and directories below the given
     * path.
     */
-  def walkFiles(start: File): Stream[File] = {
-    if (start.isDirectory) {
-      val entries = start.list.toStream
-      start #:: entries.flatMap(walkFiles)
-    } else {
-      Stream(start)
+  def walkFiles(start: File, recursive: Boolean = true): Stream[File] = {
+    if (start.isRegularFile) Stream(start)
+    else {
+      if (recursive) start.glob("**")(File.PathMatcherSyntax.glob).toStream
+      else start.list.toStream
     }
   }
+
 
   /** Split the name of the file in basename and extension. The extension
     * is the part of the name following the last `.' character.
