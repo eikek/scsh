@@ -92,6 +92,8 @@ a pull request or an issue.
 - [[https://github.com/xerial/sqlite-jdbc][sqlite-jdbc]] jdbc driver for [[http://www.sqlite.org][sqlite]] databases
 - [[https://github.com/tototoshi/scala-csv][scala-csv]] a library for working with csv files
 - [[https://github.com/typesafehub/config][typesafe's config]] a configuration library
+- [[https://github.com/sksamuel/scrimage][scrimage]] image processing libary
+- [[https://github.com/t3hnar/scala-bcrypt][scala-bcrypt]] scala wrapper for jbcrypt
 
 ** code
 

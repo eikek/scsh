@@ -24,5 +24,6 @@ libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.3",
   "com.typesafe" % "config" % "1.3.0",
   "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.6",
-  "com.sksamuel.scrimage" %% "scrimage-io-extra" % "2.1.6"
+  "com.sksamuel.scrimage" %% "scrimage-io-extra" % "2.1.6",
+  "com.github.t3hnar" %% "scala-bcrypt" % "2.6"
 )
