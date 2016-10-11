@@ -15,6 +15,7 @@ object bulkfile {
     regex: Option[String] = None,
     glob: Option[String] = None,
     parallel: Boolean = false,
+    yes: Boolean = false,
     debug: Boolean = false,
     dry: Boolean = false)
 
@@ -54,6 +55,10 @@ object bulkfile {
       opt[Unit]("dry") optional() action { (_, c) =>
         update(c, c.params.copy(dry = true))
       } text("Do not execute the transformation, but show what would happen.")
+
+      opt[Unit]('y', "yes") action { (_, c) =>
+        update(c, c.params.copy(yes = true))
+      } text("No confirmation, assume `yes'.")
 
       opt[Unit]("debug") hidden() action { (_, c) =>
         update(c, c.params.copy(debug = true))
@@ -110,7 +115,7 @@ object bulkfile {
       } else {
         preview.foreach(logLine)
         logLine("...")
-        if (confirm.continue()) {
+        if (cfg.params.yes || confirm.continue()) {
           if (p.dry || !p.parallel) allFiles foreach transform(cfg)
           else allFiles.toSeq.par foreach transform(cfg)
         }
